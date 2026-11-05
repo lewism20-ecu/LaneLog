@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:LaneLog.App.ViewModels"
+             x:Class="LaneLog.App.Views.GameEditorPage"
+             x:DataType="vm:GameEditorViewModel"
+             Title="{Binding PageTitle}"
+             SafeAreaEdges="All"
+             BackgroundColor="{AppThemeBinding Light=#F4F8F6, Dark=#101C19}">
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Padding="20,18,20,24" Spacing="10">
+                <Label Text="{Binding PageTitle}"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="25"
+                       SemanticProperties.HeadingLevel="Level1" />
+                <Label Text="Save the final score and any notes you want to remember."
+                       FontSize="13"
+                       TextColor="{AppThemeBinding Light=#4B625D, Dark=#B8CBC5}" />
+
+                <Label Text="Date" FontFamily="OpenSansSemibold" Margin="0,10,0,0" />
+                <Border Padding="10,0" StrokeShape="RoundRectangle 10"
+                        Stroke="{AppThemeBinding Light=#C6D9D3, Dark=#57716A}"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}">
+                    <DatePicker AutomationId="PlayedOnPicker"
+                                Date="{Binding PlayedOn, Mode=TwoWay}"
+                                IsEnabled="{Binding CanEdit}"
+                                MinimumHeightRequest="48" />
+                </Border>
+
+                <Label Text="Final score (0-300)" FontFamily="OpenSansSemibold" Margin="0,6,0,0" />
+                <Border Padding="10,0" StrokeShape="RoundRectangle 10"
+                        Stroke="{AppThemeBinding Light=#C6D9D3, Dark=#57716A}"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}">
+                    <Entry AutomationId="ScoreEntry"
+                           Text="{Binding ScoreText, Mode=TwoWay}"
+                           Placeholder="Enter a whole number"
+                           PlaceholderColor="{AppThemeBinding Light=#60756E, Dark=#BACFC8}"
+                           Keyboard="Numeric"
+                           IsEnabled="{Binding CanEdit}"
+                           MinimumHeightRequest="48" />
+                </Border>
+
+                <Label Text="Bowling alley (optional)" FontFamily="OpenSansSemibold" Margin="0,6,0,0" />
+                <Border Padding="10,0" StrokeShape="RoundRectangle 10"
+                        Stroke="{AppThemeBinding Light=#C6D9D3, Dark=#57716A}"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}">
+                    <Picker AutomationId="AlleyPicker"
+                            Title="Choose an alley"
+                            ItemsSource="{Binding AlleyChoices}"
+                            ItemDisplayBinding="{Binding DisplayName, x:DataType=vm:AlleyChoice}"
+                            SelectedItem="{Binding SelectedAlley, Mode=TwoWay}"
+                            IsEnabled="{Binding CanEdit}"
+                            MinimumHeightRequest="48" />
+                </Border>
+
+                <Label Text="New alley name"
+                       IsVisible="{Binding IsNewAlley}"
+                       FontFamily="OpenSansSemibold"
+                       Margin="0,6,0,0" />
+                <Border IsVisible="{Binding IsNewAlley}"
+                        Padding="10,0" StrokeShape="RoundRectangle 10"
+                        Stroke="{AppThemeBinding Light=#C6D9D3, Dark=#57716A}"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}">
+                    <Entry AutomationId="NewAlleyEntry"
+                           Text="{Binding NewAlleyName, Mode=TwoWay}"
+                           Placeholder="Enter the alley name"
+                           PlaceholderColor="{AppThemeBinding Light=#60756E, Dark=#BACFC8}"
+                           IsEnabled="{Binding CanEdit}"
+                           MinimumHeightRequest="48" />
+                </Border>
+
+                <Label Text="Notes (optional)" FontFamily="OpenSansSemibold" Margin="0,6,0,0" />
+                <Border Padding="10,0" StrokeShape="RoundRectangle 10"
+                        Stroke="{AppThemeBinding Light=#C6D9D3, Dark=#57716A}"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}">
+                    <Editor AutomationId="NotesEditor"
+                            Text="{Binding Notes, Mode=TwoWay}"
+                            Placeholder="Anything you want to remember"
+                            PlaceholderColor="{AppThemeBinding Light=#60756E, Dark=#BACFC8}"
+                            IsEnabled="{Binding CanEdit}"
+                            HeightRequest="100" />
+                </Border>
+
+                <Label AutomationId="ValidationMessage"
+                       Text="{Binding ErrorMessage}"
+                       IsVisible="{Binding HasError}"
+                       TextColor="{AppThemeBinding Light=#A12D24, Dark=#FFB4AB}" />
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,12,0,0">
+                    <Button Text="Cancel"
+                            Command="{Binding CancelCommand}"
+                            BackgroundColor="{AppThemeBinding Light=#DDEBE7, Dark=#3A554E}"
+                            TextColor="{AppThemeBinding Light=#173D36, Dark=#E7F5F2}"
+                            MinimumHeightRequest="48" />
+                    <Button Grid.Column="1"
+                            AutomationId="SaveGameButton"
+                            Text="Save game"
+                            Command="{Binding SaveGameCommand}"
+                            MinimumHeightRequest="48" />
+                </Grid>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

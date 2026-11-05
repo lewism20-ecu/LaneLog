@@ -1,0 +1,32 @@
+{
+  "query": "SELECT GameId, TotalScore, AlleyName, Notes FROM Games ORDER BY GameId;",
+  "rows": [
+    [
+      1,
+      100,
+      "Campus Lanes",
+      "Practiced spare shots."
+    ],
+    [
+      2,
+      250,
+      "River Lanes",
+      "Focused on timing."
+    ]
+  ],
+  "columns": [
+    "GameId",
+    "TotalScore",
+    "AlleyName",
+    "Notes"
+  ],
+  "schemaColumns": [
+    "GameId",
+    "PlayedOn",
+    "TotalScore",
+    "AlleyName",
+    "Notes",
+    "PhotoRelativePath",
+    "UpdatedUtc"
+  ]
+}

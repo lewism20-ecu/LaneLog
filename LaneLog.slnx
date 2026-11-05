@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LaneLog.App/LaneLog.App.csproj" />
+    <Project Path="src/LaneLog.Core/LaneLog.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LaneLog.Core.Tests/LaneLog.Core.Tests.csproj" />
+  </Folder>
+</Solution>

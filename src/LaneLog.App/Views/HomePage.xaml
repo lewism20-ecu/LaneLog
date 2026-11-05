@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:LaneLog.Core.Models;assembly=LaneLog.Core"
+             xmlns:vm="clr-namespace:LaneLog.App.ViewModels"
+             x:Class="LaneLog.App.Views.HomePage"
+             x:DataType="vm:HomeViewModel"
+             Title="Home"
+             BackgroundColor="{AppThemeBinding Light=#F4F8F6, Dark=#101C19}">
+    <Grid Padding="20,14,20,16"
+          RowDefinitions="Auto,Auto,Auto,Auto,*"
+          RowSpacing="14">
+        <VerticalStackLayout Spacing="3">
+            <Label Text="Your bowling, in one place"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="24"
+                   SemanticProperties.HeadingLevel="Level1" />
+            <Label Text="Scores and notes, saved on this device."
+                   FontSize="13"
+                   TextColor="{AppThemeBinding Light=#4B625D, Dark=#B8CBC5}" />
+        </VerticalStackLayout>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="8">
+            <Border Padding="12" StrokeThickness="0" StrokeShape="RoundRectangle 12"
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}">
+                <VerticalStackLayout Spacing="3">
+                    <Label Text="GAMES" FontSize="11" TextColor="{AppThemeBinding Light=#506861, Dark=#C3D7D1}" />
+                    <Label Text="{Binding GameCount}" FontFamily="OpenSansSemibold" FontSize="22" />
+                </VerticalStackLayout>
+            </Border>
+            <Border Grid.Column="1" Padding="12" StrokeThickness="0" StrokeShape="RoundRectangle 12"
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}">
+                <VerticalStackLayout Spacing="3">
+                    <Label Text="AVERAGE" FontSize="11" TextColor="{AppThemeBinding Light=#506861, Dark=#C3D7D1}" />
+                    <Label Text="{Binding AverageScore}" FontFamily="OpenSansSemibold" FontSize="22" />
+                </VerticalStackLayout>
+            </Border>
+            <Border Grid.Column="2" Padding="12" StrokeThickness="0" StrokeShape="RoundRectangle 12"
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}">
+                <VerticalStackLayout Spacing="3">
+                    <Label Text="BEST" FontSize="11" TextColor="{AppThemeBinding Light=#506861, Dark=#C3D7D1}" />
+                    <Label Text="{Binding BestScore}" FontFamily="OpenSansSemibold" FontSize="22" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <Button Grid.Row="2"
+                AutomationId="AddGameButton"
+                Text="Add game"
+                Command="{Binding AddGameCommand}"
+                MinimumHeightRequest="48" />
+
+        <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Game history"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="19"
+                       SemanticProperties.HeadingLevel="Level2" />
+                <Label Text="{Binding ErrorMessage}"
+                       IsVisible="{Binding HasError}"
+                       TextColor="{AppThemeBinding Light=#A12D24, Dark=#FFB4AB}" />
+            </VerticalStackLayout>
+            <Button Grid.Column="1"
+                    Text="Retry"
+                    Command="{Binding LoadCommand}"
+                    IsVisible="{Binding HasError}" />
+        </Grid>
+
+        <CollectionView x:Name="GameList"
+                        Grid.Row="4"
+                        AutomationId="GameList"
+                        ItemsSource="{Binding Games}"
+                        IsEnabled="{Binding IsNotBusy}"
+                        SelectionMode="Single"
+                        SelectionChanged="OnGameSelected">
+            <CollectionView.EmptyView>
+                <VerticalStackLayout IsVisible="{Binding IsEmpty}"
+                                     Padding="18,30"
+                                     HorizontalOptions="Center"
+                                     Spacing="6">
+                    <Label Text="No games yet" FontFamily="OpenSansSemibold" FontSize="18"
+                           HorizontalTextAlignment="Center" />
+                    <Label Text="Add your first score to start your history."
+                           HorizontalTextAlignment="Center"
+                           TextColor="{AppThemeBinding Light=#4B625D, Dark=#B8CBC5}" />
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:BowlingGame">
+                    <Border Margin="0,0,0,10"
+                            Padding="16"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 12"
+                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}">
+                        <Grid ColumnDefinitions="64,*,Auto" ColumnSpacing="12">
+                            <Label Text="{Binding TotalScore}"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="25"
+                                   TextColor="{AppThemeBinding Light=#176B61, Dark=#A4E0D6}"
+                                   VerticalOptions="Center" />
+                            <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                <Label Text="{Binding PlayedOn, StringFormat='{0:MMM d, yyyy}'}"
+                                       FontFamily="OpenSansSemibold" />
+                                <Label Text="{Binding AlleyName}"
+                                       FontSize="13"
+                                       TextColor="{AppThemeBinding Light=#4B625D, Dark=#B8CBC5}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2" Text="Edit" FontSize="13"
+                                   TextColor="{AppThemeBinding Light=#176B61, Dark=#A4E0D6}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Hide the parent as well: the Android preview handler can leave the indicator visible. -->
+        <Grid Grid.Row="4"
+              IsVisible="{Binding IsBusy}"
+              InputTransparent="True">
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               SemanticProperties.Description="Loading games"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+        </Grid>
+    </Grid>
+</ContentPage>
