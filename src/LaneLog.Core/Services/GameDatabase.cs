@@ -47,6 +47,16 @@ public sealed class GameDatabase
         return await database.FindAsync<BowlingGame>(gameId);
     }
 
+    public async Task<bool> IsPhotoInUseAsync(string photoRelativePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(photoRelativePath);
+
+        await initialization;
+        return await database.Table<BowlingGame>()
+            .Where(game => game.PhotoRelativePath == photoRelativePath)
+            .CountAsync() > 0;
+    }
+
     public async Task SaveGameAsync(BowlingGame game)
     {
         ArgumentNullException.ThrowIfNull(game);

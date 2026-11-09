@@ -1,25 +1,26 @@
 # LaneLog design document
 
-Status: Week 2 implementation in progress  
-Updated: 2026-11-03
+Status: Week 3 photo integration implemented; Android verification in progress
+
+Updated: 2026-11-09
 
 ## Purpose and scope
 
-LaneLog helps a bowler keep final scores, notes, and eventually score photos together, and see an average and best score over time. Version 1 records the completed score rather than calculating individual rolls. The demonstration target is an Android phone or emulator.
+LaneLog helps a bowler keep final scores, notes, and optional score photos together, and see an average and best score over time. Version 1 records the completed score rather than calculating individual rolls. The demonstration target is an Android phone or emulator.
 
 ## Screens
 
 | Screen | Purpose | Current status |
 |---|---|---|
 | Home | List saved games, show count/average/best, and open Add or Edit. | Implemented and exercised on Android. |
-| Add/Edit Game | Enter date, score and notes; choose an optional saved or new alley; save or cancel a separate draft. | Implemented and exercised on Android. |
+| Add/Edit Game | Enter date, score and notes; choose an optional alley and score photo; save or cancel a separate draft. | Game entry exercised on Android; photo controls rendered, but the complete media journey is not yet verified. |
 | Settings | Configure preferences such as a default alley. | Proposed in the Week 1 design; not implemented. |
 
-Photo selection, preview, and persistence are planned for the editor. Home already includes basic statistics; a separate Statistics screen is not part of the current proposal.
+The editor now includes photo selection, capture, preview, replacement, and removal. Home already includes basic statistics; a separate Statistics screen is not part of the current proposal.
 
 ## Data and storage
 
-The [BowlingGame model](../src/LaneLog.Core/Models/BowlingGame.cs) stores `GameId`, `PlayedOn`, `TotalScore`, `AlleyName`, `Notes`, `PhotoRelativePath`, and `UpdatedUtc`. The ID is the generated SQLite primary key. Scores must be whole numbers from 0 through 300; alley and notes are optional. The photo path is reserved for the future integration and is not yet populated by the app.
+The [BowlingGame model](../src/LaneLog.Core/Models/BowlingGame.cs) stores `GameId`, `PlayedOn`, `TotalScore`, `AlleyName`, `Notes`, `PhotoRelativePath`, and `UpdatedUtc`. The ID is the generated SQLite primary key. Scores must be whole numbers from 0 through 300; alley, notes, and the relative photo path are optional.
 
 There is currently one persisted entity and no foreign-key relationship. The count, average, and best score are calculated from the saved games rather than stored as separate records.
 
@@ -37,10 +38,12 @@ The editor's alley choices come from the names on saved games rather than a sepa
 
 ## Integration and failure handling
 
-The planned photo feature must select or capture a real image, copy it into app-owned storage, save its relative path, and reload it after restarting. Cancellation, access denial, and a missing file should not destroy the draft or saved game. None of those media paths has been implemented or verified yet.
+The [photo service](../src/LaneLog.App/Services/PhotoService.cs) invokes MAUI's native media picker on the main thread and copies the selected stream through [PhotoFileStore](../src/LaneLog.Core/Services/PhotoFileStore.cs) into app-owned storage. The editor saves its relative path with the game. It keeps a previously saved photo until the database update succeeds, and removes an old copy only if no saved game refers to it. An unavailable photo produces a message without discarding the game. The original gallery file is never deleted.
+
+Android requests camera access only for capture; image selection uses the installed MAUI preview's system picker or `ACTION_GET_CONTENT` fallback. App data can be included in Android's system backups, and photo metadata can remain in the copied image. The complete select/capture, cancel, denial, missing-file, replacement, and restart flows still need Android verification. Recovery of a picker result and unsaved draft after Android destroys the app process is not implemented.
 
 The current editor rejects invalid scores, retains the draft when saving fails, and reports a recoverable message. The history page reports load failures and offers Retry. Invalid-score feedback was exercised on Android; storage-failure and malformed-route UI paths have not yet been deliberately exercised.
 
 ## Verification and next milestone
 
-The [Week 2 verification log](verification/week-02/verification-log.md) separates build, test, database, and Android checks. Week 3 will focus on real photo integration and its cancellation, permission, and persistence behavior.
+The [Week 2 verification log](verification/week-02/verification-log.md) and [Week 3 verification log](verification/week-03/verification-log.md) separate builds, tests, database checks, and Android observations. The next step is to finish the real Android media and persistence checks before claiming the integration is complete.

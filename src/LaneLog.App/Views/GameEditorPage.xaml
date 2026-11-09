@@ -82,6 +82,44 @@
                             HeightRequest="100" />
                 </Border>
 
+                <Label Text="Score photo (optional)"
+                       FontFamily="OpenSansSemibold"
+                       Margin="0,10,0,0" />
+                <Label Text="Attach a photo of the score screen or score sheet."
+                       FontSize="13"
+                       TextColor="{AppThemeBinding Light=#4B625D, Dark=#B8CBC5}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <Button AutomationId="ChoosePhotoButton"
+                            Text="Choose photo"
+                            Command="{Binding ChoosePhotoCommand}"
+                            MinimumHeightRequest="48" />
+                    <Button Grid.Column="1"
+                            AutomationId="TakePhotoButton"
+                            Text="Take photo"
+                            Command="{Binding TakePhotoCommand}"
+                            MinimumHeightRequest="48" />
+                </Grid>
+                <Border IsVisible="{Binding HasPhotoPreview}"
+                        Padding="6"
+                        StrokeShape="RoundRectangle 10"
+                        Stroke="{AppThemeBinding Light=#C6D9D3, Dark=#57716A}">
+                    <Image AutomationId="ScorePhotoPreview"
+                           Source="{Binding PhotoPreviewPath}"
+                           Aspect="AspectFit"
+                           HeightRequest="200"
+                           SemanticProperties.Description="Score photo preview" />
+                </Border>
+                <Button AutomationId="RemovePhotoButton"
+                        Text="Remove photo"
+                        Command="{Binding RemovePhotoCommand}"
+                        IsVisible="{Binding HasPhotoReference}"
+                        MinimumHeightRequest="48" />
+                <Label AutomationId="PhotoMessage"
+                       Text="{Binding PhotoMessage}"
+                       IsVisible="{Binding HasPhotoMessage}"
+                       FontSize="13"
+                       TextColor="{AppThemeBinding Light=#4B625D, Dark=#B8CBC5}" />
+
                 <Label AutomationId="ValidationMessage"
                        Text="{Binding ErrorMessage}"
                        IsVisible="{Binding HasError}"

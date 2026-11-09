@@ -2,9 +2,11 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LaneLog.App.Services;
 using LaneLog.Core.Models;
 using LaneLog.Core.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.ApplicationModel;
 using SQLite;
 
 namespace LaneLog.App.ViewModels;
@@ -13,18 +15,28 @@ public partial class GameEditorViewModel : ObservableObject, IQueryAttributable
 {
     private const string AlleyChoiceError = "Choose an alley or select No alley.";
     private const string NewAlleyError = "Enter a new alley name or select No alley.";
+    private const string SelectedPhotoError = "The selected photo is unavailable. Choose it again or remove it.";
 
     private readonly GameDatabase database;
+    private readonly PhotoService photos;
+    private readonly PhotoFileStore photoFiles;
     private readonly ILogger<GameEditorViewModel> logger;
+    private readonly HashSet<string> photosToClean = new(StringComparer.Ordinal);
     private bool initialized;
     private bool invalidGameId;
     private int? requestedGameId;
     private int gameId;
-    private string? photoRelativePath;
+    private string? savedPhotoRelativePath;
 
-    public GameEditorViewModel(GameDatabase database, ILogger<GameEditorViewModel> logger)
+    public GameEditorViewModel(
+        GameDatabase database,
+        PhotoService photos,
+        PhotoFileStore photoFiles,
+        ILogger<GameEditorViewModel> logger)
     {
         this.database = database;
+        this.photos = photos;
+        this.photoFiles = photoFiles;
         this.logger = logger;
     }
 
@@ -35,11 +47,17 @@ public partial class GameEditorViewModel : ObservableObject, IQueryAttributable
     [NotifyPropertyChangedFor(nameof(CanCancel))]
     [NotifyCanExecuteChangedFor(nameof(SaveGameCommand))]
     [NotifyCanExecuteChangedFor(nameof(CancelCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ChoosePhotoCommand))]
+    [NotifyCanExecuteChangedFor(nameof(TakePhotoCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RemovePhotoCommand))]
     private bool isBusy;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanEdit))]
     [NotifyCanExecuteChangedFor(nameof(SaveGameCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ChoosePhotoCommand))]
+    [NotifyCanExecuteChangedFor(nameof(TakePhotoCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RemovePhotoCommand))]
     private bool isReady;
 
     [ObservableProperty]
@@ -62,6 +80,18 @@ public partial class GameEditorViewModel : ObservableObject, IQueryAttributable
     private string notes = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPhotoReference))]
+    private string? photoRelativePath;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPhotoPreview))]
+    private string? photoPreviewPath;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPhotoMessage))]
+    private string photoMessage = string.Empty;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasError))]
     private string errorMessage = string.Empty;
 
@@ -70,6 +100,12 @@ public partial class GameEditorViewModel : ObservableObject, IQueryAttributable
     public bool CanCancel => !IsBusy;
 
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
+
+    public bool HasPhotoReference => PhotoRelativePath is not null;
+
+    public bool HasPhotoPreview => PhotoPreviewPath is not null;
+
+    public bool HasPhotoMessage => !string.IsNullOrEmpty(PhotoMessage);
 
     public bool IsNewAlley => SelectedAlley?.IsNew == true;
 
@@ -184,7 +220,8 @@ public partial class GameEditorViewModel : ObservableObject, IQueryAttributable
                 PlayedOn = game.PlayedOn;
                 ScoreText = game.TotalScore.ToString(CultureInfo.InvariantCulture);
                 Notes = game.Notes;
-                photoRelativePath = game.PhotoRelativePath;
+                savedPhotoRelativePath = game.PhotoRelativePath;
+                SetPhoto(savedPhotoRelativePath);
             }
 
             IsReady = true;
@@ -195,6 +232,122 @@ public partial class GameEditorViewModel : ObservableObject, IQueryAttributable
             ErrorMessage = requestedGameId is null
                 ? "Couldn't load saved alleys. Go back and try again."
                 : "Couldn't load this game or saved alleys. Go back and try again.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanEdit))]
+    private Task ChoosePhotoAsync() => ChangePhotoAsync(capture: false);
+
+    [RelayCommand(CanExecute = nameof(CanEdit))]
+    private Task TakePhotoAsync() => ChangePhotoAsync(capture: true);
+
+    private async Task ChangePhotoAsync(bool capture)
+    {
+        if (!CanEdit)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var selectedPath = capture ? await photos.CaptureAsync() : await photos.PickAsync();
+            if (selectedPath is null)
+            {
+                if (!HasPhotoReference || HasPhotoPreview)
+                {
+                    PhotoMessage = "No photo was chosen. Your current photo is unchanged.";
+                }
+
+                return;
+            }
+
+            var previousPath = PhotoRelativePath;
+            SetPhoto(selectedPath);
+            if (HasPhotoPreview)
+            {
+                if (ErrorMessage == SelectedPhotoError)
+                {
+                    ErrorMessage = string.Empty;
+                }
+
+                PhotoMessage = "Photo ready. Save the game to keep it.";
+            }
+
+            QueueUncommittedPhoto(previousPath);
+            if (!await CleanupPhotosAsync())
+            {
+                PhotoMessage = HasPhotoPreview
+                    ? "Photo ready, but an unused copy couldn't be removed. Saving will retry."
+                    : "The selected photo is unavailable, and an unused copy couldn't be removed.";
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            if (!HasPhotoReference || HasPhotoPreview)
+            {
+                PhotoMessage = "No photo was chosen. Your current photo is unchanged.";
+            }
+        }
+        catch (PhotoSelectionLimitException exception)
+        {
+            logger.LogWarning(exception, "More than one photo was selected.");
+            PhotoMessage = "Choose only one score photo at a time.";
+        }
+        catch (PermissionException exception)
+        {
+            logger.LogWarning(exception, "Photo access was denied.");
+            PhotoMessage = "Photo access was denied. Check device permissions or choose another photo.";
+        }
+        catch (FeatureNotSupportedException exception)
+        {
+            logger.LogWarning(exception, "Photo capture or selection is unavailable.");
+            PhotoMessage = "That photo option isn't available on this device. Try choosing a photo instead.";
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException
+            or UnauthorizedAccessException or System.Security.SecurityException or InvalidOperationException
+            or ArgumentException or NotSupportedException)
+        {
+            logger.LogError(exception, "Could not choose or copy a score photo.");
+            PhotoMessage = "Couldn't add that photo. Your game is unchanged; try again.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanEdit))]
+    private async Task RemovePhotoAsync()
+    {
+        if (!CanEdit)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var previousPath = PhotoRelativePath;
+            SetPhoto(null);
+            QueueUncommittedPhoto(previousPath);
+            if (ErrorMessage == SelectedPhotoError)
+            {
+                ErrorMessage = string.Empty;
+            }
+
+            PhotoMessage = savedPhotoRelativePath is null
+                ? "Photo removed from this draft."
+                : "Photo will be removed when you save the game.";
+
+            if (!await CleanupPhotosAsync())
+            {
+                PhotoMessage = "Photo removed from the draft, but an unused copy couldn't be removed. Saving will retry.";
+            }
         }
         finally
         {
@@ -230,6 +383,14 @@ public partial class GameEditorViewModel : ObservableObject, IQueryAttributable
             return;
         }
 
+        if (PhotoRelativePath is not null
+            && !string.Equals(PhotoRelativePath, savedPhotoRelativePath, StringComparison.Ordinal)
+            && (PhotoPreviewPath is null || !File.Exists(PhotoPreviewPath)))
+        {
+            ErrorMessage = SelectedPhotoError;
+            return;
+        }
+
         IsBusy = true;
         ErrorMessage = string.Empty;
         try
@@ -241,7 +402,7 @@ public partial class GameEditorViewModel : ObservableObject, IQueryAttributable
                 TotalScore = score,
                 AlleyName = alleyName,
                 Notes = Notes?.Trim() ?? string.Empty,
-                PhotoRelativePath = photoRelativePath
+                PhotoRelativePath = PhotoRelativePath
             };
 
             try
@@ -257,12 +418,108 @@ public partial class GameEditorViewModel : ObservableObject, IQueryAttributable
 
             gameId = game.GameId;
             PageTitle = "Edit game";
+            var previousSavedPhoto = savedPhotoRelativePath;
+            savedPhotoRelativePath = PhotoRelativePath;
+            if (previousSavedPhoto is not null
+                && !string.Equals(previousSavedPhoto, savedPhotoRelativePath, StringComparison.Ordinal))
+            {
+                photosToClean.Add(previousSavedPhoto);
+            }
+
+            if (!await CleanupPhotosAsync())
+            {
+                ErrorMessage = "Game saved, but an old photo couldn't be removed. Save again to retry.";
+                return;
+            }
+
             await ReturnToHistoryAsync("Game saved, but couldn't return to history. Use Back.");
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    public async Task DiscardUncommittedPhotoAsync()
+    {
+        QueueUncommittedPhoto(PhotoRelativePath);
+        await CleanupPhotosAsync();
+    }
+
+    private void SetPhoto(string? relativePath)
+    {
+        PhotoRelativePath = relativePath;
+        PhotoPreviewPath = null;
+        PhotoMessage = string.Empty;
+        if (relativePath is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var fullPath = photoFiles.GetFullPath(relativePath);
+            if (File.Exists(fullPath))
+            {
+                PhotoPreviewPath = fullPath;
+                return;
+            }
+
+            logger.LogWarning("A game photo is missing from app storage.");
+        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidDataException
+            or IOException or UnauthorizedAccessException or System.Security.SecurityException or NotSupportedException)
+        {
+            logger.LogWarning(exception, "A game photo path is unavailable.");
+        }
+
+        PhotoMessage = "This photo is unavailable. Choose a replacement or remove the attachment.";
+    }
+
+    private void QueueUncommittedPhoto(string? relativePath)
+    {
+        if (relativePath is not null
+            && !string.Equals(relativePath, savedPhotoRelativePath, StringComparison.Ordinal))
+        {
+            photosToClean.Add(relativePath);
+        }
+    }
+
+    private async Task<bool> CleanupPhotosAsync()
+    {
+        var succeeded = true;
+        foreach (var relativePath in photosToClean.ToArray())
+        {
+            try
+            {
+                photoFiles.GetFullPath(relativePath);
+            }
+            catch (Exception exception) when (exception is InvalidDataException or ArgumentException or NotSupportedException)
+            {
+                logger.LogWarning(exception, "An invalid photo reference was not deleted.");
+                photosToClean.Remove(relativePath);
+                continue;
+            }
+
+            try
+            {
+                if (!await database.IsPhotoInUseAsync(relativePath))
+                {
+                    photoFiles.Delete(relativePath);
+                }
+
+                photosToClean.Remove(relativePath);
+            }
+            catch (Exception exception) when (exception is SQLiteException or IOException
+                or UnauthorizedAccessException or System.Security.SecurityException
+                or InvalidOperationException or ArgumentException or NotSupportedException)
+            {
+                logger.LogError(exception, "Could not remove an unused app-owned photo.");
+                succeeded = false;
+            }
+        }
+
+        return succeeded;
     }
 
     [RelayCommand(CanExecute = nameof(CanCancel))]

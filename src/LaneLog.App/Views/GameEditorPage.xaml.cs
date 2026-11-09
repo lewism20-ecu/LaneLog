@@ -18,4 +18,10 @@ public partial class GameEditorPage : ContentPage
         base.OnAppearing();
         await viewModel.LoadCommand.ExecuteAsync(null);
     }
+
+    protected override async void OnNavigatedFrom(NavigatedFromEventArgs args)
+    {
+        base.OnNavigatedFrom(args);
+        await viewModel.DiscardUncommittedPhotoAsync();
+    }
 }
