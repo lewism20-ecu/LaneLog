@@ -3,11 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:LaneLog.Core.Models;assembly=LaneLog.Core"
              xmlns:vm="clr-namespace:LaneLog.App.ViewModels"
+             xmlns:views="clr-namespace:LaneLog.App.Views"
              x:Class="LaneLog.App.Views.HomePage"
              x:DataType="vm:HomeViewModel"
              Title="Home"
              BackgroundColor="{AppThemeBinding Light=#F4F8F6, Dark=#101C19}">
     <Grid Padding="20,14,20,16"
+          MaximumWidthRequest="840"
+          HorizontalOptions="Center"
           RowDefinitions="Auto,Auto,Auto,Auto,*"
           RowSpacing="14">
         <VerticalStackLayout Spacing="3">
@@ -63,7 +66,8 @@
             <Button Grid.Column="1"
                     Text="Retry"
                     Command="{Binding LoadCommand}"
-                    IsVisible="{Binding HasError}" />
+                    IsVisible="{Binding HasError}"
+                    MinimumHeightRequest="48" />
         </Grid>
 
         <CollectionView x:Name="GameList"
@@ -87,29 +91,7 @@
             </CollectionView.EmptyView>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:BowlingGame">
-                    <Border Margin="0,0,0,10"
-                            Padding="16"
-                            StrokeThickness="0"
-                            StrokeShape="RoundRectangle 12"
-                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}">
-                        <Grid ColumnDefinitions="64,*,Auto" ColumnSpacing="12">
-                            <Label Text="{Binding TotalScore}"
-                                   FontFamily="OpenSansSemibold"
-                                   FontSize="25"
-                                   TextColor="{AppThemeBinding Light=#176B61, Dark=#A4E0D6}"
-                                   VerticalOptions="Center" />
-                            <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
-                                <Label Text="{Binding PlayedOn, StringFormat='{0:MMM d, yyyy}'}"
-                                       FontFamily="OpenSansSemibold" />
-                                <Label Text="{Binding AlleyName}"
-                                       FontSize="13"
-                                       TextColor="{AppThemeBinding Light=#4B625D, Dark=#B8CBC5}" />
-                            </VerticalStackLayout>
-                            <Label Grid.Column="2" Text="Edit" FontSize="13"
-                                   TextColor="{AppThemeBinding Light=#176B61, Dark=#A4E0D6}"
-                                   VerticalOptions="Center" />
-                        </Grid>
-                    </Border>
+                    <views:GameHistoryCard />
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>

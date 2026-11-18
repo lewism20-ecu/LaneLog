@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:LaneLog.Core.Models;assembly=LaneLog.Core"
+             x:Class="LaneLog.App.Views.GameHistoryCard"
+             x:DataType="models:BowlingGame">
+    <Border AutomationId="{Binding GameId, StringFormat='GameCard-{0}'}"
+            Margin="0,0,0,10"
+            Padding="16"
+            StrokeThickness="0"
+            StrokeShape="RoundRectangle 12"
+            Background="{AppThemeBinding Light=#FFFFFF, Dark=#243A35}"
+            SemanticProperties.Hint="Tap to edit this game.">
+        <Grid ColumnDefinitions="64,*,Auto" ColumnSpacing="12">
+            <Label Text="{Binding TotalScore}"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="25"
+                   TextColor="{AppThemeBinding Light=#176B61, Dark=#A4E0D6}"
+                   VerticalOptions="Center"
+                   SemanticProperties.Description="{Binding TotalScore, StringFormat='Score {0}'}" />
+            <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                <Label Text="{Binding PlayedOn, StringFormat='{0:MMM d, yyyy}'}"
+                       FontFamily="OpenSansSemibold" />
+                <Label Text="{Binding AlleyName}"
+                       FontSize="13"
+                       TextColor="{AppThemeBinding Light=#4B625D, Dark=#B8CBC5}" />
+            </VerticalStackLayout>
+            <Label Grid.Column="2"
+                   Text="Edit"
+                   FontSize="13"
+                   TextColor="{AppThemeBinding Light=#176B61, Dark=#A4E0D6}"
+                   VerticalOptions="Center" />
+        </Grid>
+    </Border>
+</ContentView>

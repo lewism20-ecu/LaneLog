@@ -7,7 +7,8 @@
              Title="{Binding PageTitle}"
              SafeAreaEdges="All"
              BackgroundColor="{AppThemeBinding Light=#F4F8F6, Dark=#101C19}">
-    <Grid>
+    <Grid MaximumWidthRequest="680"
+          HorizontalOptions="Center">
         <ScrollView>
             <VerticalStackLayout Padding="20,18,20,24" Spacing="10">
                 <Label Text="{Binding PageTitle}"
@@ -25,7 +26,8 @@
                     <DatePicker AutomationId="PlayedOnPicker"
                                 Date="{Binding PlayedOn, Mode=TwoWay}"
                                 IsEnabled="{Binding CanEdit}"
-                                MinimumHeightRequest="48" />
+                                MinimumHeightRequest="48"
+                                SemanticProperties.Description="Date the game was played" />
                 </Border>
 
                 <Label Text="Final score (0-300)" FontFamily="OpenSansSemibold" Margin="0,6,0,0" />
@@ -38,7 +40,8 @@
                            PlaceholderColor="{AppThemeBinding Light=#60756E, Dark=#BACFC8}"
                            Keyboard="Numeric"
                            IsEnabled="{Binding CanEdit}"
-                           MinimumHeightRequest="48" />
+                           MinimumHeightRequest="48"
+                           SemanticProperties.Description="Final score as a whole number from 0 to 300" />
                 </Border>
 
                 <Label Text="Bowling alley (optional)" FontFamily="OpenSansSemibold" Margin="0,6,0,0" />
@@ -51,7 +54,8 @@
                             ItemDisplayBinding="{Binding DisplayName, x:DataType=vm:AlleyChoice}"
                             SelectedItem="{Binding SelectedAlley, Mode=TwoWay}"
                             IsEnabled="{Binding CanEdit}"
-                            MinimumHeightRequest="48" />
+                            MinimumHeightRequest="48"
+                            SemanticProperties.Description="Optional bowling alley. Choose a saved alley, add a new one, or choose no alley." />
                 </Border>
 
                 <Label Text="New alley name"
@@ -67,7 +71,8 @@
                            Placeholder="Enter the alley name"
                            PlaceholderColor="{AppThemeBinding Light=#60756E, Dark=#BACFC8}"
                            IsEnabled="{Binding CanEdit}"
-                           MinimumHeightRequest="48" />
+                           MinimumHeightRequest="48"
+                           SemanticProperties.Description="Name of the new bowling alley" />
                 </Border>
 
                 <Label Text="Notes (optional)" FontFamily="OpenSansSemibold" Margin="0,6,0,0" />
@@ -79,7 +84,9 @@
                             Placeholder="Anything you want to remember"
                             PlaceholderColor="{AppThemeBinding Light=#60756E, Dark=#BACFC8}"
                             IsEnabled="{Binding CanEdit}"
-                            HeightRequest="100" />
+                            MinimumHeightRequest="100"
+                            AutoSize="TextChanges"
+                            SemanticProperties.Description="Optional notes about this game" />
                 </Border>
 
                 <Label Text="Score photo (optional)"
